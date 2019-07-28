@@ -11,7 +11,7 @@ class TwitterStreamListener(StreamListener):
     def __init__(self, time_limit=60):
         self.start_time = time.time()
         self.limit = time_limit
-        self.file = open("/Users/hirendossani/PycharmProjects/twitter_kinesis/src/resources/tweets.json", "w+")
+        self.file = open("/Users/hirendossani/git/ckme136_capstone_project/src/resources/tweets.json", "w+")
         super(TwitterStreamListener, self).__init__()
 
     def on_data(self, data):
@@ -25,7 +25,7 @@ class TwitterStreamListener(StreamListener):
                             "tweetid": tweet_id,
                             "text": tweet_text
                              }
-                with open("/Users/hirendossani/PycharmProjects/twitter_kinesis/src/resources/tweets.json", "a") as tf:
+                with open("/Users/hirendossani/git/ckme136_capstone_project/src/resources/tweets.json", "a") as tf:
                     tf.write(json.dumps(json_data) + '\n')
 
                 firehose_client = boto3.client('firehose',
@@ -49,4 +49,4 @@ class TwitterStreamListener(StreamListener):
 auth = OAuthHandler(credentials.CONSUMERAPIKEY, credentials.CONSUMERAPISECRETKEY)
 auth.set_access_token(credentials.APIACCESSTOKEN, credentials.APIACCESSTOKENSECRET)
 twitterStream = Stream(auth, TwitterStreamListener())
-twitterStream.filter(languages=["en"], track=['Republicans'])
+twitterStream.filter(languages=["en"], track=['Trudeau'])

@@ -29,7 +29,7 @@ def lambda_handler(event, context):
                     tweet_text = re.sub(r"(http|https)(.*)(?<!')(?<!\")", "", tweet_text)
                     # remove emojis, symbols
                     tweet_text = re.sub(r"[^\x00-\x7F]+", "", tweet_text)
-                    # print(tweet_text)
+                    
                     # Determine sentiment
                     sentiment_str = comprehend.detect_sentiment(Text=tweet_text, LanguageCode=tweet_lang)
                     sentiment_json = dict(tweetid=tweet_id, text=tweet_text, sentiment=sentiment_str["Sentiment"],
@@ -57,6 +57,6 @@ def lambda_handler(event, context):
                                                                     }
                                                                     )
                         print(tweet_text)
-                except json.decoder.JSONDecodeError as e:
+                except Exception as e:
                     print('Error' + str(e))
     return ""
