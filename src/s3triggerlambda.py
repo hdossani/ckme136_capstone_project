@@ -1,7 +1,6 @@
 import boto3
 import json
 import os
-import re
 
 
 def lambda_handler(event, context):
@@ -14,6 +13,7 @@ def lambda_handler(event, context):
     rawbucket = s3_resource.Bucket('ckme136.capstone.twitter')
     if event:
         for file in rawbucket.objects.all():
+            print(str(file))
             rawdata = file.get()['Body'].read().decode('utf-8')
             tweets = rawdata.split("\n")
             for tweet in tweets:
@@ -22,41 +22,34 @@ def lambda_handler(event, context):
                     tweet_text = tweet_str.get("text", "Neutral Text")
                     tweet_id = tweet_str.get("tweetid", -999)
                     tweet_lang = "en"
-                    # clean up the text to remove username and RT
-                    tweet_text = re.sub(r"RT @[\w:]*", "", tweet_text)
-                    tweet_text = re.sub(r"@[\w]*", "", tweet_text)
-                    # remove links
-                    tweet_text = re.sub(r"(http|https)(.*)(?<!')(?<!\")", "", tweet_text)
-                    # remove emojis, symbols
-                    tweet_text = re.sub(r"[^\x00-\x7F]+", "", tweet_text)
 
-                    # Determine sentiment
-                    sentiment_str = comprehend.detect_sentiment(Text=tweet_text, LanguageCode=tweet_lang)
-                    sentiment_json = dict(tweetid=tweet_id, text=tweet_text, sentiment=sentiment_str["Sentiment"],
+                    if tweet_text != "Neutral Text":
+                        # Determine sentiment
+                        sentiment_str = comprehend.detect_sentiment(Text=tweet_text, LanguageCode=tweet_lang)
+                        sentiment_json = dict(tweetid=tweet_id, text=tweet_text, sentiment=sentiment_str["Sentiment"],
                                           positive=sentiment_str["SentimentScore"]["Positive"],
                                           negative=sentiment_str["SentimentScore"]["Negative"],
                                           neutral=sentiment_str["SentimentScore"]["Neutral"],
                                           mixed=sentiment_str["SentimentScore"]["Mixed"])
-                    sentimentresponse = firehose_client.put_record(DeliveryStreamName='twitterSentimentStream',
+                        sentimentresponse = firehose_client.put_record(DeliveryStreamName='twitterSentimentStream',
                                                                    Record={
                                                                        'Data': json.dumps(sentiment_json) + '\n'
                                                                    }
                                                                    )
+                        # Determine entity
+                        entity_str = comprehend.detect_entities(Text=tweet_text, LanguageCode=tweet_lang)
+                        for entity in entity_str["Entities"]:
+                            entity_json = {"tweetid": tweet_id,
+                                           "entity": entity["Text"],
+                                           "type": entity["Type"],
+                                           "score": entity["Score"]}
 
-                    # Determine entity
-                    entity_str = comprehend.detect_entities(Text=tweet_text, LanguageCode=tweet_lang)
-                    for entity in entity_str["Entities"]:
-                        entity_json = {
-                            "tweetid": tweet_id,
-                            "entity": entity["Text"],
-                            "type": entity["Type"],
-                            "score": entity["Score"]}
-                        responseentity = firehose_client.put_record(DeliveryStreamName='twitterEntityStream',
-                                                                    Record={
-                                                                        'Data': json.dumps(entity_json) + '\n'
-                                                                    }
-                                                                    )
-                        print(str(tweet_id) + ' , ' + tweet_text)
+                            responseentity = firehose_client.put_record(DeliveryStreamName='twitterEntityStream',
+                                                                        Record={
+                                                                            'Data': json.dumps(entity_json) + '\n'
+                                                                        }
+                                                                        )
+
                 except Exception as e:
                     print('Error' + str(e))
     return ""

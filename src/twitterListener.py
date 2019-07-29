@@ -5,6 +5,7 @@ import time
 import json
 import boto3
 import credentials
+import re
 
 
 class TwitterStreamListener(StreamListener):
@@ -21,10 +22,19 @@ class TwitterStreamListener(StreamListener):
                 tweet_text = rawtweet.get("text", "Neutral Text")
                 tweet_id = rawtweet.get("id", -999)
 
+                # clean up the text to remove username and RT
+                clean_text1 = re.sub(r"RT @[\w:]*", "", tweet_text)
+                clean_text2 = re.sub(r"@[\w]*", "", clean_text1)
+                # remove links
+                clean_text3 = re.sub(r"(http|https)(.*)(?<!')(?<!\")", "", clean_text2)
+                # remove emojis, symbols
+                clean_text = re.sub(r"[^\x00-\x7F]+", "", clean_text3)
+
                 json_data = {
                             "tweetid": tweet_id,
-                            "text": tweet_text
+                            "text": clean_text
                              }
+
                 with open("/Users/hirendossani/git/ckme136_capstone_project/src/resources/tweets.json", "a") as tf:
                     tf.write(json.dumps(json_data) + '\n')
 
