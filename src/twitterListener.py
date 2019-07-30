@@ -5,11 +5,10 @@ import time
 import json
 import boto3
 import credentials
-import re
 
 
 class TwitterStreamListener(StreamListener):
-    def __init__(self, time_limit=60):
+    def __init__(self, time_limit=40):
         self.start_time = time.time()
         self.limit = time_limit
         self.file = open("/Users/hirendossani/git/ckme136_capstone_project/src/resources/tweets.json", "w+")
@@ -22,17 +21,9 @@ class TwitterStreamListener(StreamListener):
                 tweet_text = rawtweet.get("text", "Neutral Text")
                 tweet_id = rawtweet.get("id", -999)
 
-                # clean up the text to remove username and RT
-                clean_text1 = re.sub(r"RT @[\w:]*", "", tweet_text)
-                clean_text2 = re.sub(r"@[\w]*", "", clean_text1)
-                # remove links
-                clean_text3 = re.sub(r"(http|https)(.*)(?<!')(?<!\")", "", clean_text2)
-                # remove emojis, symbols
-                clean_text = re.sub(r"[^\x00-\x7F]+", "", clean_text3)
-
                 json_data = {
                             "tweetid": tweet_id,
-                            "text": clean_text
+                            "text": tweet_text
                              }
 
                 with open("/Users/hirendossani/git/ckme136_capstone_project/src/resources/tweets.json", "a") as tf:
@@ -59,4 +50,4 @@ class TwitterStreamListener(StreamListener):
 auth = OAuthHandler(credentials.CONSUMERAPIKEY, credentials.CONSUMERAPISECRETKEY)
 auth.set_access_token(credentials.APIACCESSTOKEN, credentials.APIACCESSTOKENSECRET)
 twitterStream = Stream(auth, TwitterStreamListener())
-twitterStream.filter(languages=["en"], track=['Trudeau'])
+twitterStream.filter(languages=["en"], track=['Trump'])
